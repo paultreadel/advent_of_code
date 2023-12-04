@@ -42,7 +42,7 @@ def part_two():
 
 
 if __name__ == "__main__":
-    with open("day01_input.txt") as input_file:
+    with open("data/day01_input.txt") as input_file:
         input_data = input_file.readlines()
     part_one()
     part_two()
