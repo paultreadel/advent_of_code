@@ -8,31 +8,52 @@ if __name__ == "__main__":
     # parse input
     with open("data/day02.txt") as input_file:
         input_data = input_file.read()
-        input_data = """7 6 4 2 1
-    1 2 7 8 9
-    9 7 6 2 1
-    1 3 2 4 5
-    8 6 4 4 1
-    1 3 6 7 9"""
     reports = [
         [int(level) for level in line.split()] for line in input_data.splitlines()
     ]
-    consecutive_differences = [
-        [a - b for a, b in pairwise(report)] for report in reports
-    ]
-    safe_reports = []
-    for differences in consecutive_differences:
-        directions = [copysign(1, d) for d in differences]
-        is_direction_same = all((d == directions[0] for d in directions))
-        if not is_direction_same:
-            safe_reports.append(False)
-            continue
-        magnitudes = [abs(d) for d in differences]
-        is_level_change_tolerable = (
-            min(magnitudes) >= MIN_LEVEL_CHANGE_ALLOWED
-            and max(magnitudes) <= MAX_LEVEL_CHANGE_ALLOWED
-        )
-        safe_reports.append(is_direction_same and is_level_change_tolerable)
 
-    print(f"Part 1: {sum(safe_reports)}")
-    pass
+    def is_safe_report(report):
+        changes = [a - b for a, b in pairwise(report)]
+        change_direction = copysign(1, changes[0])
+        for idx, change in enumerate(changes):
+            level_change_within_tolerance = (
+                MIN_LEVEL_CHANGE_ALLOWED <= abs(change) <= MAX_LEVEL_CHANGE_ALLOWED
+            )
+            change_directionally_consistent = copysign(1, change) == change_direction
+            if not level_change_within_tolerance or not change_directionally_consistent:
+                return False, idx
+        return True, None
+
+    num_safe_reports_part1 = 0
+    for report in reports:
+        safe_report, unsafe_idx = is_safe_report(report)
+        if safe_report:
+            num_safe_reports_part1 += 1
+    print(f"Part 1: {num_safe_reports_part1}")
+
+    num_safe_reports_part2 = 0
+    for report in reports:
+        safe_report, unsafe_idx = is_safe_report(report)
+        if safe_report:
+            num_safe_reports_part2 += 1
+        else:
+            # special case: if second transition found unsafe, check if removing the
+            # first level makes the remainder of the report safe
+            if unsafe_idx == 1:
+                report_level_removed = report.copy()
+                report_level_removed.pop(0)
+                safe_report, _ = is_safe_report(report_level_removed)
+                if safe_report:
+                    num_safe_reports_part2 += 1
+                    continue
+
+            # check if removing one transition from either side of the unsafe
+            # transition makes the entire report safe
+            for offset in [0, 1]:
+                report_level_removed = report.copy()
+                report_level_removed.pop(unsafe_idx + offset)
+                safe_report, _ = is_safe_report(report_level_removed)
+                if safe_report:
+                    num_safe_reports_part2 += 1
+                    break
+    print(f"Part 2: {num_safe_reports_part2}")
