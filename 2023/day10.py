@@ -1,6 +1,3 @@
-from copy import deepcopy
-from typing import Dict, Tuple, List
-
 import numpy as np
 
 valid_directions = {

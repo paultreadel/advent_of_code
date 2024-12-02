@@ -23,7 +23,6 @@ numbers_by_word = {
 
 
 def part_two():
-
     total = 0
     for line in input_data:
         number_candidates = chain(

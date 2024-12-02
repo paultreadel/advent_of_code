@@ -1,6 +1,6 @@
 import math
 from itertools import cycle
-from typing import Dict, List, Callable
+from typing import Callable, Dict, List
 
 
 class Node:

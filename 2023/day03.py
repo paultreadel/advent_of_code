@@ -6,7 +6,7 @@ from scipy.signal import convolve2d
 
 
 def is_symbol(s):
-    return re.match(f"[^\d.]", s) is not None
+    return re.match("[^\d.]", s) is not None
 
 
 def is_adjacent_to_symbol(row, start_position, end_position, symbol_adjacency):
