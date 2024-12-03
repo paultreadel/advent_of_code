@@ -31,3 +31,15 @@ if __name__ == "__main__":
         if multiply_flag:
             total_part_2 += int(a) * int(b)
     print(f"Part 2: {total_part_2}")
+
+    # part 2 alternative
+    pattern = r"mul\((\d+),(\d+)\)|(do\(\))|(don't\(\))"
+    total_part_2 = 0
+    multiply_flag = True
+    for a, b, do, dont in re.findall(pattern, input_data):
+        if do or dont:
+            multiply_flag = bool(do)
+        else:
+            if multiply_flag:
+                total_part_2 += int(a) * int(b)
+    print(f"Part 2 (alternative): {total_part_2}")
