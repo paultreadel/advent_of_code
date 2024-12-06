@@ -54,18 +54,20 @@ if __name__ == "__main__":
 
     def find_guard_path(grid, start, direction):
         current_cell = start
-        path = set()
+        ordered_path = [(start, direction)]
+        visited_path = {(start, direction)}
         while True:
-            if (current_cell, direction) in path:
-                return path, True
-            path.add((current_cell, direction))
             i, j = current_cell
             di, dj = direction
             next_cell = (i + di, j + dj)
             if not is_cell_in_bounds(next_cell, grid):
-                return path, False
+                return ordered_path, False
             if is_cell_traversable(next_cell, grid):
                 current_cell = next_cell
+                if (current_cell, direction) in visited_path:
+                    return ordered_path, True
+                ordered_path.append((current_cell, direction))
+                visited_path.add((current_cell, direction))
             else:
                 direction = DIRECTIONS[(DIRECTIONS.index(direction) + 1) % 4]
 
@@ -77,12 +79,14 @@ if __name__ == "__main__":
 
     checked_cells = set()
     num_looping_obstructions = 0
-    for cell, dir in tqdm(guard_path):
+    for idx, (cell, dir) in tqdm(enumerate(guard_path), total=len(guard_path)):
         if cell in checked_cells or cell is start_cell:
             continue
         i, j = cell
         grid[i][j] = "#"
-        guard_path, is_loop = find_guard_path(grid, start_cell, start_direction)
+        # start at previous cell & direction to speed up loop detection
+        prev_cell, prev_dir = guard_path[idx - 1]
+        _, is_loop = find_guard_path(grid, prev_cell, dir)
         if is_loop:
             num_looping_obstructions += 1
         checked_cells.add(cell)
