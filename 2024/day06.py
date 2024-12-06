@@ -90,15 +90,25 @@ if __name__ == "__main__":
     checked_cells = set()
     num_looping_obstructions = 0
     for idx, (cell, dir) in tqdm(enumerate(guard_path), total=len(guard_path)):
-        if cell in checked_cells or cell is start_cell or idx == 0:
+        if cell in checked_cells or idx == 0:
             continue
+        # place an obstacle at the current cell, don't create a copy of the grid to
+        # reduce runtime, instead update individual elements of the grid in place and
+        # reset them after each loop check
         i, j = cell
         grid[i][j] = "#"
-        # start at previous cell & direction to speed up loop detection
+
+        # check for loop in guard path with new obstacle present but start check at
+        # the previous cell & direction to speed up loop detection
         prev_cell, prev_dir = guard_path[idx - 1]
-        _, is_loop = find_guard_path(grid, prev_cell, dir)
+        _, is_loop = find_guard_path(grid, prev_cell, prev_dir)
         if is_loop:
             num_looping_obstructions += 1
-        checked_cells.add(cell)
+
+        # remove the obstacle after checking for loops
         grid[i][j] = "."
+
+        # add cell to list of checked cells, this prevents the same cell from being
+        # double counted if it is visited multiple times by the guard
+        checked_cells.add(cell)
     print(f"Part 2: {num_looping_obstructions}")
