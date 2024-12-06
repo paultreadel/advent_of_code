@@ -59,9 +59,11 @@ if __name__ == "__main__":
         # loops on simulated obstacle position by starting the guard at position `n-1`
         # if an obstacle is placed at position `n`
         ordered_path = [(start, direction)]
+
         # use set to improve performance when checking if a cell/dir has been visited
-        # (a loop)
+        # indicating a loop has been found
         _visited_path = {(start, direction)}
+
         while True:
             i, j = current_cell
             di, dj = direction
@@ -78,11 +80,13 @@ if __name__ == "__main__":
                 direction = DIRECTIONS[(DIRECTIONS.index(direction) + 1) % 4]
 
     start_cell, start_direction = find_guard_start_cell_and_direction(grid)
-    guard_path, _ = find_guard_path(grid, start_cell, start_direction)
 
+    # part 1
+    guard_path, _ = find_guard_path(grid, start_cell, start_direction)
     unique_cells = set(cell for cell, _ in guard_path)
     print(f"Part 1: {len(unique_cells)}")
 
+    # part 2
     checked_cells = set()
     num_looping_obstructions = 0
     for idx, (cell, dir) in tqdm(enumerate(guard_path), total=len(guard_path)):
