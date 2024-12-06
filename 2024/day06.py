@@ -54,8 +54,14 @@ if __name__ == "__main__":
 
     def find_guard_path(grid, start, direction):
         current_cell = start
+
+        # function returns an ordered path to allow part 2 to optimize checking for
+        # loops on simulated obstacle position by starting the guard at position `n-1`
+        # if an obstacle is placed at position `n`
         ordered_path = [(start, direction)]
-        visited_path = {(start, direction)}
+        # use set to improve performance when checking if a cell/dir has been visited
+        # (a loop)
+        _visited_path = {(start, direction)}
         while True:
             i, j = current_cell
             di, dj = direction
@@ -64,10 +70,10 @@ if __name__ == "__main__":
                 return ordered_path, False
             if is_cell_traversable(next_cell, grid):
                 current_cell = next_cell
-                if (current_cell, direction) in visited_path:
+                if (current_cell, direction) in _visited_path:
                     return ordered_path, True
                 ordered_path.append((current_cell, direction))
-                visited_path.add((current_cell, direction))
+                _visited_path.add((current_cell, direction))
             else:
                 direction = DIRECTIONS[(DIRECTIONS.index(direction) + 1) % 4]
 
@@ -80,7 +86,7 @@ if __name__ == "__main__":
     checked_cells = set()
     num_looping_obstructions = 0
     for idx, (cell, dir) in tqdm(enumerate(guard_path), total=len(guard_path)):
-        if cell in checked_cells or cell is start_cell:
+        if cell in checked_cells or cell is start_cell or idx == 0:
             continue
         i, j = cell
         grid[i][j] = "#"
