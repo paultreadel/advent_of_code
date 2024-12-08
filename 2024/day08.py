@@ -19,6 +19,7 @@ if __name__ == "__main__":
     def find_nodes(cell, offset, harmonic: float = 1) -> set:
         # harmonic = 0 -> node on antennas
         # harmonic = 1 -> node on antennas and one offset step away
+        # ...
         # harmonic = "inf" -> node on antennas and every multiple step away on grid
         original_cell = cell
         nodes = set()
@@ -49,7 +50,7 @@ if __name__ == "__main__":
             nodes = find_nodes(a1, offset_step, harmonic=1) | find_nodes(
                 a2, offset_step, harmonic=1
             )
-            # remove antennas from nodes
+            # remove antenna locations from nodes
             unique_antinodes_part_one.update(nodes.difference(antenna_pair))
 
             # part 2 - find nodes on antennas and every multiple step away on grid
