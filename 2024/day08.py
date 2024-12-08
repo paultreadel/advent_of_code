@@ -21,8 +21,10 @@ if __name__ == "__main__":
         # harmonic = 1 -> node on antennas and one offset step away
         # ...
         # harmonic = "inf" -> node on antennas and every multiple step away on grid
+
         original_cell = cell
         nodes = set()
+        # check both directions from the antenna
         for offset in [offset, (-offset[0], -offset[1])]:
             cell = original_cell
             harmonic_count = 0
@@ -46,14 +48,17 @@ if __name__ == "__main__":
             a1, a2 = antenna_pair
             offset_step = get_offset(a1, a2)
 
-            # part 1 - find nodes on antennas and one offset step away
-            nodes = find_nodes(a1, offset_step, harmonic=1) | find_nodes(
-                a2, offset_step, harmonic=1
+            # part 1 - find nodes on each antenna and one offset step away, then remove
+            #  the antennas themselves as these are not valid nodes
+            unique_antinodes_part_one.update(
+                (
+                    find_nodes(a1, offset_step, harmonic=1)
+                    | find_nodes(a2, offset_step, harmonic=1)
+                )
+                - set(antenna_pair)
             )
-            # remove antenna locations from nodes
-            unique_antinodes_part_one.update(nodes.difference(antenna_pair))
 
-            # part 2 - find nodes on antennas and every multiple step away on grid
+            # part 2 - find nodes on antennas and multiple of the step away on grid
             unique_antinodes_part_two.update(
                 find_nodes(a1, offset_step, harmonic=float("inf"))
             )
