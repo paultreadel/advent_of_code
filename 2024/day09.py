@@ -26,16 +26,16 @@ if __name__ == "__main__":
         print("".join(disk_as_chars))
 
     def defrag(disk, debug=False):
-        is_idx_head_contiguous = True
-        idx_head_contiguous = 0
+        idx_contiguous_end = 0
         update_made = True
         for idx_tail in reversed(range(len(disk))):
+            idx_head_in_contiguous_block = True
             if debug and update_made:
                 update_made = False
                 print_disk(disk)
-            if idx_head_contiguous >= idx_tail:
+            if idx_contiguous_end >= idx_tail:
                 break
-            for idx_head in range(idx_head_contiguous, idx_tail):
+            for idx_head in range(idx_contiguous_end, idx_tail):
                 id_tail, size_tail = disk[idx_tail]
                 id_head, size_head = disk[idx_head]
                 if id_head >= 0:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                     # tail has free space, go to next tail idx
                     break
 
-                if size_head >= size_tail:
+                if size_head >= size_tail and id_tail >= 0:
                     update_made = True
                     disk[idx_head] = (id_head, size_head - size_tail)
                     disk[idx_tail] = (id_head, size_tail)
@@ -58,10 +58,10 @@ if __name__ == "__main__":
                 else:
                     # file doesn't fit in head space, go to next head idx
                     # mark that idx_head is no longer in the starting contiguous block
-                    is_idx_head_contiguous = False
+                    idx_head_in_contiguous_block = False
                     continue
-                if is_idx_head_contiguous:
-                    idx_head_contiguous = idx_head
+                if idx_head_in_contiguous_block:
+                    idx_contiguous_end = idx_head
                 if debug and update_made:
                     update_made = False
                     print_disk(disk)
