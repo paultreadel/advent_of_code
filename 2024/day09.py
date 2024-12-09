@@ -4,6 +4,10 @@ if __name__ == "__main__":
     with open("data/day09.txt") as input_file:
         input_data = input_file.read()
 
+    # TODO - attempt implementation with min heap
+    #  reference:  https://www.reddit.com/r/adventofcode/comments/1ha27bo/comment/m15re2h/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+    # TODO - PPM image format - what is it? - https://www.reddit.com/r/adventofcode/comments/1ha4kvv/2024_day_9_defragging_visualization/
+
     # input_data = """2333133121414131402"""
     # input_data = """12345"""
 
