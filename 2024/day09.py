@@ -1,11 +1,13 @@
 from collections import deque
 from copy import deepcopy
 
+from tqdm import tqdm
+
 if __name__ == "__main__":
     with open("data/day09.txt") as input_file:
         input_data = input_file.read()
 
-    input_data = """2333133121414131402"""
+    # input_data = """2333133121414131402"""
     # input_data = """12345"""
 
     file_size_by_id = {}
@@ -36,50 +38,56 @@ if __name__ == "__main__":
                         break
         return sorted_files
 
+    def next_contiguous_space_of_size(lst: deque, size: int):
+        data = deepcopy(lst)
+        idx_start = 0
+        while idx_start < len(data):
+            is_free = True
+            for idx in range(size):
+                if data[idx] != ".":
+                    is_free = False
+                    idx_start += 1
+                    data.rotate(-1)
+                    break
+            if is_free:
+                return idx_start
+        return -1
+
     def sort_data_part_two(lst: deque, file_size_by_id: dict):
-        sorted_files = []
-        while lst:
-            file_id = lst.popleft()
-            if isinstance(file_id, int):
-                if file_id in file_size_by_id:
-                    for _ in range(file_size_by_id.pop(file_id)):
-                        sorted_files.append(file_id)
-                else:
-                    continue
+        checked_sizes = set()
+        for _id, size in tqdm(
+            reversed(file_size_by_id.items()), total=len(file_size_by_id)
+        ):
+            if size in checked_sizes:
+                continue
+            idx_start = next_contiguous_space_of_size(lst, size)
+            if idx_start == 0:
+                idx_id_unsorted = lst.index(_id)
+                for idx in range(size):
+                    lst[idx_start + idx] = _id
+                    lst[idx_id_unsorted + idx] = "."
+            elif idx_start < 0:
+                checked_sizes.add(size)
+                continue
             else:
-                free_space_size = 0
-                while lst:
-                    free_space_size += 1
-                    if isinstance(lst[0], int):
-                        break
-                    lst.popleft()
-                while (
-                    free_space_size > 0
-                    and min(file_size_by_id.values()) <= free_space_size
-                ):
-                    for _id, size in dict(reversed(file_size_by_id.items())).items():
-                        if size <= free_space_size:
-                            for _ in range(size):
-                                sorted_files.append(_id)
-                            del file_size_by_id[_id]
-                            while _id in lst:
-                                lst.remove(_id)
-                            free_space_size -= size
-                            if free_space_size == 0:
-                                break
-                    else:
-                        break
+                idx_id_unsorted = lst.index(_id)
+                if idx_start > idx_id_unsorted:
+                    continue
+                for idx in range(size):
+                    lst[idx_start + idx] = _id
+                    lst[idx_id_unsorted + idx] = "."
+        return lst
 
-                pass
-        return sorted_files
-
-    # sorted_files = sort_data(deque(file_list))
-    # total_part_one = 0
-    # for idx, file_id in enumerate(sorted_files):
-    #     total_part_one += file_id * idx
+    sorted_files = sort_data(deque(file_list))
+    total_part_one = 0
+    for idx, file_id in enumerate(sorted_files):
+        total_part_one += file_id * idx
 
     sorted_files = sort_data_part_two(deque(file_list), deepcopy(file_size_by_id))
-    pass
+    total_part_two = 0
+    for idx, file_id in enumerate(sorted_files):
+        if isinstance(file_id, int):
+            total_part_two += file_id * idx
 
-    # print(f"Part 1: {total_part_one}")
-    # print(f"Part 2: {len(unique_antinodes_part_two)}")
+    print(f"Part 1: {total_part_one}")
+    print(f"Part 2: {total_part_two}")
