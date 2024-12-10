@@ -4,13 +4,14 @@ if __name__ == "__main__":
     with open("data/day10.txt") as input_file:
         input_data = input_file.read()
 
-    #         input_data = """.....0.
-    # ..4321.
-    # ..5..2.
-    # ..6543.
-    # ..7..4.
-    # ..8765.
-    # ..9...."""
+    #         input_data = """89010123
+    # 78121874
+    # 87430965
+    # 96549874
+    # 45678903
+    # 32019012
+    # 01329801
+    # 10456732"""
 
     DIRECTIONS = [
         (0, 1),  # right
@@ -57,6 +58,27 @@ if __name__ == "__main__":
         visited.add(cell)
         return len(scores[cell[0]][cell[1]])
 
+    def unique_trails(elevation, cell, scores, visited):
+        if elevation == 9:
+            scores[cell[0]][cell[1]].add(tuple((cell,)))
+            return scores[cell[0]][cell[1]]
+        for direction in DIRECTIONS:
+            next_cell = (cell[0] + direction[0], cell[1] + direction[1])
+            if not in_bounds(next_cell):
+                continue
+            try:
+                next_elevation = int(grid[next_cell[0]][next_cell[1]])
+            except ValueError:
+                next_elevation = -1
+            if next_elevation == elevation + 1:
+                if unique_trails(next_elevation, next_cell, scores, visited):
+                    paths = []
+                    for path in scores[next_cell[0]][next_cell[1]]:
+                        paths.append((cell,) + path)
+                    scores[cell[0]][cell[1]].update(paths)
+        visited.add(cell)
+        return scores[cell[0]][cell[1]]
+
     # array of all zeros same shape as grid
     trailhead_count = 0
     scores = [[set() for _ in range(len(grid[0]))] for _ in range(len(grid))]
@@ -65,12 +87,15 @@ if __name__ == "__main__":
         for j in range(len(grid[0])):
             if grid[i][j] == "0":
                 trailhead_count += cell_score(0, (i, j), scores, set())
-    print(trailhead_count)
+    print(f"Part 1 {trailhead_count}")
 
-    # visited_cells = set()
-    # print(cell_score(0, (0, 1), scores, visited_cells))
-    # print(cell_score(0, (6, 5), scores, visited_cells))
-    # # print(cell_score(0, (0, 3), scores, visited_cells))
-    # print_scores(scores)
-
-    pass
+    # array of all zeros same shape as grid
+    trailhead_count = 0
+    scores = [[set() for _ in range(len(grid[0]))] for _ in range(len(grid))]
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            if grid[i][j] == "0":
+                trails = unique_trails(0, (i, j), scores, set())
+                num_trails = len(set(tuple(l) for l in trails))
+                trailhead_count += num_trails
+    print(f"Part 2 {trailhead_count}")
