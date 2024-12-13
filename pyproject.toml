@@ -13,3 +13,4 @@ dependencies = [
 
 [tool.ruff.lint]
 extend-select = ["I"]
+extend-unsafe-fixes = ["F401"]
