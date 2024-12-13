@@ -23,41 +23,47 @@ if __name__ == "__main__":
     # Button B: X+27, Y+71
     # Prize: X=18641, Y=10279"""
 
-    machines = input_data.split("\n\n")
+    a_token_cost = 3
+    b_token_cost = 1
 
     total_tokens_part_one = 0
-    total_tokens_part_two = 0
-    for machine in machines:
-        match_pattern = r"X[=+](\d+), Y[=+](\d+)"
-        numbers = []
-        for match in re.finditer(match_pattern, machine):
-            numbers.append(tuple(map(int, match.groups())))
-        *buttons, prize = numbers
+    for offset in [0, 10000000000000]:
+        for machine in input_data.split("\n\n"):
+            match_pattern = r"X[=+](\d+), Y[=+](\d+)"
+            numbers = []
+            for match in re.finditer(match_pattern, machine):
+                numbers.append(tuple(map(int, match.groups())))
+            *buttons, prize = numbers
 
-        buttons = np.array(buttons)
-        prize = np.array(prize) + 0
+            # I don't know why this works and the cvxpy solution doesn't for part 2,
+            # they should both be solving a system of lineara equations
+            buttons = np.array(buttons).T
+            prize = np.array(prize) + offset
+            presses = np.linalg.solve(buttons, prize).round()
+            if np.all(buttons @ presses == prize):
+                num_tokens = presses[0] * a_token_cost + presses[1] * b_token_cost
+                total_tokens_part_one += int(num_tokens)
 
-        x = cp.Variable(2, integer=True)
-        a_token_cost = 3
-        b_token_cost = 1
-        minimize_tokens = cp.Minimize(x @ [a_token_cost, b_token_cost])
-        constraints = [
-            # position x (row 0), y (row 1)
-            buttons.T @ x == prize,
-            # num presses, scaler broadcasts so applies individually to each button
-            0 <= x,
-            x <= 100,
-        ]
-
-        problem = cp.Problem(
-            minimize_tokens,
-            constraints,
-        )
-        num_tokens = problem.solve()
-        if problem.status == "optimal":
-            total_tokens_part_one += int(num_tokens)
-            total_tokens_part_two += int(x.value @ [a_token_cost, b_token_cost])
-    print(total_tokens_part_one)
-    print(total_tokens_part_two)
-    # 56828585825849
-    pass
+            # (a_x, a_y), (b_x, b_y) = np.array(buttons)
+            # prize_x, prize_y = np.array(prize) + offset
+            #
+            # a_presses = cp.Variable(integer=True)
+            # b_presses = cp.Variable(integer=True)
+            # minimize_tokens = cp.Minimize(
+            #     a_presses * a_token_cost + b_presses * b_token_cost
+            # )
+            # constraints = [
+            #     a_x * a_presses + b_x * b_presses == prize_x,
+            #     a_y * a_presses + b_y * b_presses == prize_y,
+            #     0.0 <= a_presses,
+            #     0.0 <= b_presses,
+            # ]
+            #
+            # problem = cp.Problem(
+            #     minimize_tokens,
+            #     constraints,
+            # )
+            # num_tokens = problem.solve()
+            # if problem.status == "optimal":
+            #     total_tokens_part_one += int(num_tokens)
+        print(total_tokens_part_one)
