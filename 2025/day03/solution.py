@@ -16,28 +16,31 @@ def max_joltage_search(joltages, total_joltage_value, max_joltage_value=9):
         return False, total_joltage_value
     if len(total_joltage_value) == 12:
         return True, total_joltage_value
+    if len(joltages) + len(total_joltage_value) < 12:
+        return False, total_joltage_value
     joltage_idx = None
-    for digit in string.digits[max_joltage_value:0:-1]:
+    descending_digits_capped = string.digits[max_joltage_value:0:-1]
+    for digit in descending_digits_capped:
         joltage = str(digit)
-        try:
-            joltage_idx = joltages.index(joltage)
-        except ValueError:
+        if joltage not in joltages:
             continue
+        joltage_idx = joltages.index(joltage)
         total_joltage_value += joltage
         break
 
     if joltage_idx is None:
-        return False, total_joltage_value
+        raise ValueError(
+            "No valid joltage found. A check before the descending search is "
+            "executed should be added to handle this case."
+        )
     search_status, total_joltage_value = max_joltage_search(
         joltages[joltage_idx + 1 :], total_joltage_value
     )
-    if search_status:
-        return True, total_joltage_value
-    # search failed backtrack, but cap search for joltage one less than the value
-    # that failed
-    if len(total_joltage_value) == 12:
+    if search_status or len(total_joltage_value) == 12:
         return True, total_joltage_value
 
+    # search failed backtrack, but cap search for joltage one less than the value
+    # that failed
     total_joltage_value = total_joltage_value[:-1]
     search_status, total_joltage_value = max_joltage_search(
         joltages, total_joltage_value, int(joltage) - 1
