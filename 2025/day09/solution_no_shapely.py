@@ -10,16 +10,6 @@ filename = "data.txt"
 DEBUG = True
 
 
-def rectangle_area(corner1, corner2):
-    x1, y1 = corner1
-    x2, y2 = corner2
-    # increase by one, rectangles of a single row should still have area, likewise
-    # when two corners are identical area should be 1 not zero
-    xdiff = abs(x1 - x2) + 1
-    ydiff = abs(y1 - y2) + 1
-    return xdiff * ydiff
-
-
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -119,16 +109,6 @@ class Polygon:
             for i in range(len(self.coordinates))
         ]
 
-    @classmethod
-    def from_rectangle(cls, vertex1: Point, vertex2: Point):
-        xmin, xmax = min(vertex1.x, vertex2.x), max(vertex1.x, vertex2.x)
-        ymin, ymax = min(vertex1.y, vertex2.y), max(vertex1.y, vertex2.y)
-        bottom_left = xmin, ymin
-        bottom_right = xmax, ymin
-        top_right = xmax, ymax
-        top_left = xmin, ymax
-        return cls([bottom_left, bottom_right, top_right, top_left])
-
     def contains(self, other: "Point|Polygon") -> bool:
         """
         Returns True if this polygon contains the other geometry.
@@ -207,6 +187,27 @@ class Polygon:
         return True
 
 
+class Box(Polygon):
+    def __init__(self, corner1: Point | Sequence[int], corner2: Point | Sequence[int]):
+        if not isinstance(corner1, Point):
+            corner1, corner2 = Point(*corner1), Point(*corner2)
+        xmin, xmax = min(corner1.x, corner2.x), max(corner1.x, corner2.x)
+        ymin, ymax = min(corner1.y, corner2.y), max(corner1.y, corner2.y)
+        bottom_left = xmin, ymin
+        bottom_right = xmax, ymin
+        top_right = xmax, ymax
+        top_left = xmin, ymax
+        super().__init__([bottom_left, bottom_right, top_right, top_left])
+
+    @property
+    def area(self) -> int:
+        # increase by one, rectangles of a single row should still have area, likewise
+        # when two corners are identical area should be 1 not zero
+        xdiff = self.aabb.max_vertex.x - self.aabb.min_vertex.x + 1
+        ydiff = self.aabb.max_vertex.y - self.aabb.min_vertex.y + 1
+        return xdiff * ydiff
+
+
 def _ray_intersects_edge(ray: Point, edge: Line):
     """
     Returns True if ray intersects edge.
@@ -256,7 +257,7 @@ if __name__ == "__main__":
         [int(value) for value in line.split(",")] for line in lines.split("\n") if line
     ]
 
-    areas = [rectangle_area(c1, c2) for c1, c2 in itertools.combinations(corners, 2)]
+    areas = [Box(c1, c2).area for c1, c2 in itertools.combinations(corners, 2)]
     max_area = max(areas)
     total_part1 = max_area
 
@@ -264,11 +265,11 @@ if __name__ == "__main__":
     red_green_tiles = Polygon(corners)
     max_area_part2 = 0
     for c1, c2 in tqdm(list(itertools.combinations(corners, 2))):
-        area = rectangle_area(c1, c2)
+        rectangle = Box(c1, c2)
+        area = rectangle.area
         if area < max_area_part2:
             continue
-        square_geom = Polygon.from_rectangle(Point(*c1), Point(*c2))
-        if red_green_tiles.contains(square_geom):
+        if red_green_tiles.contains(rectangle):
             max_area_part2 = max(max_area_part2, area)
     total_part2 = max_area_part2
 
