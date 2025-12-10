@@ -1,4 +1,5 @@
 import itertools
+from functools import cached_property, lru_cache
 from typing import List, Sequence
 
 from tqdm import tqdm
@@ -21,12 +22,16 @@ class Point:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+    def __hash__(self):
+        return hash((self.x, self.y))
+
 
 class Line:
     def __init__(self, vertex1: Point, vertex2: Point):
         self.vertex1 = vertex1
         self.vertex2 = vertex2
 
+    @lru_cache(maxsize=None)
     def is_horizontal(self) -> bool:
         return self.vertex1.y == self.vertex2.y
 
@@ -57,6 +62,7 @@ class Line:
         # - The horizontal edge's y is between the vertical edge's y1 and y2
         return (hx1 < vx < hx2) and (vy1 < hy < vy2)
 
+    @lru_cache(maxsize=None)
     def contains(self, other: Point) -> bool:
         if self.is_horizontal():
             if other.y != self.vertex1.y:
@@ -100,7 +106,7 @@ class Polygon:
         ymin, ymax = min(ys), max(ys)
         self.aabb = AxisAlignedBoundingBox(xmin, ymin, xmax, ymax)
 
-    @property
+    @cached_property
     def edges(self) -> List[Line]:
         # an edge is the line between each adjacent vertex in coordinates, an edge
         # between the last & first coordinates is also included to create a full loop
@@ -122,6 +128,7 @@ class Polygon:
             return self._contains_point(other)
         raise ValueError("Invalid type")
 
+    @lru_cache(maxsize=None)
     def _contains_point(self, vertex: Point) -> bool:
         """
         Returns True if vertex is within polygon.
