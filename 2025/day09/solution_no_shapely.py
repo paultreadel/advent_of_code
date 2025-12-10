@@ -20,7 +20,7 @@ def rectangle_area(corner1, corner2):
     return xdiff * ydiff
 
 
-class Vertex:
+class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -32,8 +32,8 @@ class Vertex:
         return self.x == other.x and self.y == other.y
 
 
-class Edge:
-    def __init__(self, vertex1: Vertex, vertex2: Vertex):
+class Line:
+    def __init__(self, vertex1: Point, vertex2: Point):
         self.vertex1 = vertex1
         self.vertex2 = vertex2
 
@@ -43,7 +43,7 @@ class Edge:
     def __repr__(self):
         return f"({self.vertex1}, {self.vertex2})"
 
-    def intersects(self: "Edge", other: "Edge") -> bool:
+    def intersects(self: "Line", other: "Line") -> bool:
         # due to axis aligned edges, parallel edges don't intersect
         if self.is_horizontal() == other.is_horizontal():
             return False
@@ -66,7 +66,7 @@ class Edge:
         # - The horizontal edge's y is between the vertical edge's y1 and y2
         return (hx1 < vx < hx2) and (vy1 < hy < vy2)
 
-    def contains(self, other: Vertex) -> bool:
+    def contains(self, other: Point) -> bool:
         if self.is_horizontal():
             if other.y != self.vertex1.y:
                 return False
@@ -89,13 +89,13 @@ class AxisAlignedBoundingBox:
         self.ymin = ymin
         self.xmax = xmax
         self.ymax = ymax
-        self.min_vertex = Vertex(xmin, ymin)
-        self.max_vertex = Vertex(xmax, ymax)
+        self.min_vertex = Point(xmin, ymin)
+        self.max_vertex = Point(xmax, ymax)
 
     def contains(self, other: "AxisAlignedBoundingBox") -> bool:
         if isinstance(other, AxisAlignedBoundingBox):
             return self.contains(other.min_vertex) and self.contains(other.max_vertex)
-        if isinstance(other, Vertex):
+        if isinstance(other, Point):
             return (
                 self.xmin <= other.x <= self.xmax and self.ymin <= other.y <= self.ymax
             )
@@ -104,8 +104,8 @@ class AxisAlignedBoundingBox:
 
 class Polygon:
     def __init__(self, coordinates: Sequence[Sequence[int]]):
-        self.coordinates: List[Vertex] = [
-            Vertex(coord[0], coord[1]) for coord in coordinates
+        self.coordinates: List[Point] = [
+            Point(coord[0], coord[1]) for coord in coordinates
         ]
         xs, ys = zip(*coordinates)
         xmin, xmax = min(xs), max(xs)
@@ -113,16 +113,16 @@ class Polygon:
         self.aabb = AxisAlignedBoundingBox(xmin, ymin, xmax, ymax)
 
     @property
-    def edges(self) -> List[Edge]:
+    def edges(self) -> List[Line]:
         # an edge is the line between each adjacent vertex in coordinates, an edge
         # between the last & first coordinates is also included to create a full loop
         return [
-            Edge(self.coordinates[i], self.coordinates[(i + 1) % len(self.coordinates)])
+            Line(self.coordinates[i], self.coordinates[(i + 1) % len(self.coordinates)])
             for i in range(len(self.coordinates))
         ]
 
     @classmethod
-    def from_rectangle(cls, vertex1: Vertex, vertex2: Vertex):
+    def from_rectangle(cls, vertex1: Point, vertex2: Point):
         xmin, xmax = min(vertex1.x, vertex2.x), max(vertex1.x, vertex2.x)
         ymin, ymax = min(vertex1.y, vertex2.y), max(vertex1.y, vertex2.y)
         bottom_left = xmin, ymin
@@ -131,14 +131,14 @@ class Polygon:
         top_left = xmin, ymax
         return cls([bottom_left, bottom_right, top_right, top_left])
 
-    def contains(self, other: "Vertex|Polygon") -> bool:
+    def contains(self, other: "Point|Polygon") -> bool:
         if isinstance(other, Polygon):
             return self._contains_polygon(other)
-        elif isinstance(other, Vertex):
+        elif isinstance(other, Point):
             return self._contains_point(other)
         raise ValueError("Invalid type")
 
-    def _contains_point(self, vertex: Vertex) -> bool:
+    def _contains_point(self, vertex: Point) -> bool:
         """
         Returns True if vertex is within polygon.
 
@@ -179,7 +179,7 @@ class Polygon:
         return True
 
 
-def _ray_intersects_edge(ray: Vertex, edge: Edge):
+def _ray_intersects_edge(ray: Point, edge: Line):
     """
     Returns True if ray intersects edge.
 
@@ -194,7 +194,7 @@ def _ray_intersects_edge(ray: Vertex, edge: Edge):
     # handles the case where the ray is on or collinear to the segment which is also
     # considered a non-intersection
     if p.y == a.y or p.y == b.y:
-        p = Vertex(p.x, p.y + 1)
+        p = Point(p.x, p.y + 1)
 
     # short-circuit checks
     if p.y < a.y or p.y > b.y:
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     for c1, c2 in tqdm(list(itertools.combinations(corners, 2))):
         x1, y1 = c1
         x2, y2 = c2
-        square_geom = Polygon.from_rectangle(Vertex(*c1), Vertex(*c2))
+        square_geom = Polygon.from_rectangle(Point(*c1), Point(*c2))
         if red_green_tiles.contains(square_geom):
             areas_part2.append(rectangle_area(c1, c2))
     total_part2 = max(areas_part2)
