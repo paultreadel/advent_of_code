@@ -38,17 +38,46 @@ if __name__ == "__main__":
     points_ring = corners.copy()
     points_ring.append(corners[0])
     red_green_tiles = shapely.geometry.Polygon(corners)
-    areas_part2 = []
+    max_area_part2 = 0
+    max_rectangle = shapely.Polygon()
+
     for c1, c2 in itertools.combinations(corners, 2):
         x1, y1 = c1
         x2, y2 = c2
         square_geom = shapely.geometry.box(
             min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
         )
+        area = rectangle_area(c1, c2)
+        if area < max_area_part2:
+            continue
         if not red_green_tiles.contains(square_geom):
             continue
-        areas_part2.append(rectangle_area(c1, c2))
-    total_part2 = max(areas_part2)
+        area = rectangle_area(c1, c2)
+        if area > max_area_part2:
+            max_area_part2 = area
+            max_rectangle = square_geom
+    total_part2 = max_area_part2
+
+    import matplotlib.pyplot as plt
+    from shapely.plotting import plot_polygon
+
+    fig, ax = plt.subplots()
+    plot_polygon(
+        red_green_tiles,
+        ax=ax,
+        add_points=False,
+        facecolor="lightblue",
+        edgecolor="blue",
+    )
+    plot_polygon(
+        max_rectangle,
+        ax=ax,
+        add_points=False,
+        facecolor="violet",
+        edgecolor="purple",
+    )
+    ax.set_aspect("equal", adjustable="datalim")
+    plt.show()
 
     print(f"Part 1: {total_part1}")
     print(f"Part 2: {total_part2}")
