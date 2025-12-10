@@ -57,6 +57,7 @@ class Line:
         hy = horizontal_edge.vertex1.y
         vx = vertical_edge.vertex1.x
         vy1, vy2 = vertical_edge.vertex1.y, vertical_edge.vertex2.y
+        # ensure point 1 is the minimum point
         if vy1 > vy2:
             vy1, vy2 = vy2, vy1
         if hx1 > hx2:
@@ -85,19 +86,16 @@ class Line:
 
 class AxisAlignedBoundingBox:
     def __init__(self, xmin, ymin, xmax, ymax):
-        self.xmin = xmin
-        self.ymin = ymin
-        self.xmax = xmax
-        self.ymax = ymax
         self.min_vertex = Point(xmin, ymin)
         self.max_vertex = Point(xmax, ymax)
 
-    def contains(self, other: "AxisAlignedBoundingBox") -> bool:
+    def contains(self, other: "AxisAlignedBoundingBox|Point") -> bool:
         if isinstance(other, AxisAlignedBoundingBox):
             return self.contains(other.min_vertex) and self.contains(other.max_vertex)
         if isinstance(other, Point):
             return (
-                self.xmin <= other.x <= self.xmax and self.ymin <= other.y <= self.ymax
+                self.min_vertex.x <= other.x <= self.max_vertex.x
+                and self.min_vertex.y <= other.y <= self.max_vertex.y
             )
         raise ValueError("Invalid type")
 
@@ -132,6 +130,12 @@ class Polygon:
         return cls([bottom_left, bottom_right, top_right, top_left])
 
     def contains(self, other: "Point|Polygon") -> bool:
+        """
+        Returns True if this polygon contains the other geometry.
+
+        Incident geometry is considered containment. E.g. point on polygon edge,
+        polygon's identical, polygon sharing an edge, etc...
+        """
         if isinstance(other, Polygon):
             return self._contains_polygon(other)
         elif isinstance(other, Point):
@@ -149,29 +153,53 @@ class Polygon:
 
         If point is on polygon edge consider inside.
 
-        If not outside polygon, then uses even-odd ray-casting algorithm to determine if
-        point is inside polygon.  Points exactly aligned with polygon edges require
+        If point is inside axis-aligned bounding box, not shared vertex and not on an
+        edge, then uses even-odd ray-casting algorithm to determine if point is
+        inside polygon.
         """
         if not self.aabb.contains(vertex):
             return False
         for polygon_vertex in self.coordinates:
             if polygon_vertex == vertex:
                 return True
-        count = 0
+        edge_crossing_count = 0
         for edge in self.edges:
             if edge.contains(vertex):
                 return True
             if _ray_intersects_edge(vertex, edge):
-                count += 1
-        # if odd point is inside
-        return count % 2 == 1
+                edge_crossing_count += 1
+        # if odd number of edge crossings point is inside
+        return edge_crossing_count % 2 == 1
 
     def _contains_polygon(self, other: "Polygon") -> bool:
+        """
+        Returns True if other polygon vertex is within this polygon.
+
+        Check for axis-aligned bounding box containment as optimization.
+
+        Polygon does not contain other polygon if any one vertex of the other is not
+        contained. Short-circuit as soon as a vertex is found outside the polygon as
+        an optimization.
+
+         If all vertexes are contained, then check edges of polygon to be contained
+         against each edge of polygon. Any intersecting edges indicate that the
+         polygon edges cross and thus do not intersect. Short-circuit as soon as this
+         test fails.  A polygon containing all vertices of another but still having
+         edge intersections occurs when the containing polygon is concave.
+
+         Polygon only contains the other if the following criteria are met:
+         - axis-aligned bounding box contains other axis-aligned bounding box
+         - polygon contains all vertices of other polygon
+         - no edges of either polygon intersect
+        """
+        # aabb containment
         if not self.aabb.contains(other.aabb):
             return False
+        # all vertex containment
         for vertex in other.coordinates:
             if not self.contains(vertex):
                 return False
+        # no edge intersections
         for edge1 in other.edges:
             for edge2 in self.edges:
                 if edge1.intersects(edge2):
@@ -214,10 +242,6 @@ def _ray_intersects_edge(ray: Point, edge: Line):
         m_red = (b.y - a.y) / (b.x - a.x)
     if a.x != p.x:
         m_blue = (p.y - a.y) / (p.x - a.x)
-    # b.y >= a.y required to cover case where ray intersects the vertex in this case,
-    # a crossing on only the minimum vertex is considered an intersection, when the
-    # two y-s are equal then the ray is on the edge and parallel
-    # return m_blue >= m_red
     return m_blue >= m_red
 
 
@@ -238,14 +262,15 @@ if __name__ == "__main__":
 
     # create a list of points with first point repeated at end to create a full loop
     red_green_tiles = Polygon(corners)
-    areas_part2 = []
+    max_area_part2 = 0
     for c1, c2 in tqdm(list(itertools.combinations(corners, 2))):
-        x1, y1 = c1
-        x2, y2 = c2
+        area = rectangle_area(c1, c2)
+        if area < max_area_part2:
+            continue
         square_geom = Polygon.from_rectangle(Point(*c1), Point(*c2))
         if red_green_tiles.contains(square_geom):
-            areas_part2.append(rectangle_area(c1, c2))
-    total_part2 = max(areas_part2)
+            max_area_part2 = max(max_area_part2, area)
+    total_part2 = max_area_part2
 
     print(f"Part 1: {total_part1}")
     print(f"Part 2: {total_part2}")
