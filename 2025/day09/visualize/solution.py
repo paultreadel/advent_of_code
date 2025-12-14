@@ -1,26 +1,17 @@
 import itertools
 import multiprocessing
-import os
 from enum import Enum
 from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import shapely
 import shapely.plotting
+from constants import MEDIA_DIR, PART1_EXAMPLE_FRAMES, PART1_PUZZLE_FRAMES
 from tqdm import tqdm
-
-filename = "sample.txt"
-
 
 DEBUG = True
 GRID_W = 13
 GRID_H = 8
-MEDIA_DIR = "./media"
-PART1_EXAMPLE_FRAMES = MEDIA_DIR + "/part1_example"
-PART1_PUZZLE_FRAMES = MEDIA_DIR + "/part1_puzzle"
-os.makedirs(MEDIA_DIR, exist_ok=True)
-os.makedirs(PART1_EXAMPLE_FRAMES, exist_ok=True)
-os.makedirs(PART1_PUZZLE_FRAMES, exist_ok=True)
 
 
 class COLORS(str, Enum):
