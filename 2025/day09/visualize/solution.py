@@ -296,64 +296,64 @@ if __name__ == "__main__":
         values = line.split(",")
         puzzle_corners.append((int(values[0]), int(values[1])))
 
-    # visualize part 1 example input
-    make_static_grid_png(
-        example_corners, filename=f"{MEDIA_DIR}/part1_grid_example.png"
-    )
-    max_area = 0
-    for idx, (c1, c2) in enumerate(itertools.combinations(example_corners, 2)):
-        area = rectangle_area(c1, c2)
-        if area > max_area:
-            max_area = area
-        make_static_grid_png(
-            example_corners,
-            filename=f"{PART1_EXAMPLE_FRAMES}/{idx:03d}.png",
-            rectangle=(c1, c2),
-            current_area=area,
-            max_area=max_area,
-        )
-
-    # visualize part 1 full puzzle input
-    red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
-    draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/part1_grid_puzzle.png")
-
-    # capture all frames from the first k iterations, then only the largest rectangle
-    # tested rectangle in all remaining frames, largest tested is largest within that
-    # that iteration and not necessarily the max total rectangle observed across all
-    # iterations, an iteration is defined as c1 being constant
-    NUM_FULL_FRAME_ITERATIONS = 2
-    max_rect = Rectangle()
-    frame_data = []
-    full_frame_iteration_count = 0
-    max_iteration_rect = Rectangle()
-    prev_c1 = None
-    for c1, c2 in itertools.combinations(puzzle_corners, 2):
-        # detect new c1 iteration, when it occurs capture the max rectangle from that
-        # iteration, but only if all full frame iterations have been completed
-        if prev_c1 != c1:
-            # check if max iteration frame should be captured otherwise discard as it
-            # was captured by full frame capture logic
-            if full_frame_iteration_count > NUM_FULL_FRAME_ITERATIONS:
-                frame_data.append(Frame(max_iteration_rect, max_rect))
-            # reset for next iteration
-            full_frame_iteration_count += 1
-            max_iteration_rect = Rectangle()
-            prev_c1 = c1
-
-        rect = corners_to_rectangle(c1, c2)
-        # check if rectangle is maximum rectangle from all tests
-        if rect.area > max_rect.area:
-            max_rect = rect
-        # check if rectangle is maximum for this c1 iteration
-        if rect.area > max_iteration_rect.area:
-            max_iteration_rect = rect
-
-        if full_frame_iteration_count <= NUM_FULL_FRAME_ITERATIONS:
-            frame_data.append(Frame(rect, max_rect))
-    multiprocessing_draw(red_green_tiles, frame_data)
-
-    generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
-    generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 50)
+    # # visualize part 1 example input
+    # make_static_grid_png(
+    #     example_corners, filename=f"{MEDIA_DIR}/part1_grid_example.png"
+    # )
+    # max_area = 0
+    # for idx, (c1, c2) in enumerate(itertools.combinations(example_corners, 2)):
+    #     area = rectangle_area(c1, c2)
+    #     if area > max_area:
+    #         max_area = area
+    #     make_static_grid_png(
+    #         example_corners,
+    #         filename=f"{PART1_EXAMPLE_FRAMES}/{idx:03d}.png",
+    #         rectangle=(c1, c2),
+    #         current_area=area,
+    #         max_area=max_area,
+    #     )
+    #
+    # # visualize part 1 full puzzle input
+    # red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
+    # draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/part1_grid_puzzle.png")
+    #
+    # # capture all frames from the first k iterations, then only the largest rectangle
+    # # tested rectangle in all remaining frames, largest tested is largest within that
+    # # that iteration and not necessarily the max total rectangle observed across all
+    # # iterations, an iteration is defined as c1 being constant
+    # NUM_FULL_FRAME_ITERATIONS = 2
+    # max_rect = Rectangle()
+    # frame_data = []
+    # full_frame_iteration_count = 0
+    # max_iteration_rect = Rectangle()
+    # prev_c1 = None
+    # for c1, c2 in itertools.combinations(puzzle_corners, 2):
+    #     # detect new c1 iteration, when it occurs capture the max rectangle from that
+    #     # iteration, but only if all full frame iterations have been completed
+    #     if prev_c1 != c1:
+    #         # check if max iteration frame should be captured otherwise discard as it
+    #         # was captured by full frame capture logic
+    #         if full_frame_iteration_count > NUM_FULL_FRAME_ITERATIONS:
+    #             frame_data.append(Frame(max_iteration_rect, max_rect))
+    #         # reset for next iteration
+    #         full_frame_iteration_count += 1
+    #         max_iteration_rect = Rectangle()
+    #         prev_c1 = c1
+    #
+    #     rect = corners_to_rectangle(c1, c2)
+    #     # check if rectangle is maximum rectangle from all tests
+    #     if rect.area > max_rect.area:
+    #         max_rect = rect
+    #     # check if rectangle is maximum for this c1 iteration
+    #     if rect.area > max_iteration_rect.area:
+    #         max_iteration_rect = rect
+    #
+    #     if full_frame_iteration_count <= NUM_FULL_FRAME_ITERATIONS:
+    #         frame_data.append(Frame(rect, max_rect))
+    # multiprocessing_draw(red_green_tiles, frame_data)
+    #
+    # generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
+    # generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 50)
     exit()
 
     # # create a list of points with first point repeated at end to create a full loop
