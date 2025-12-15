@@ -295,6 +295,8 @@ if __name__ == "__main__":
     for line in lines.split("\n"):
         values = line.split(",")
         puzzle_corners.append((int(values[0]), int(values[1])))
+
+    # visualize part 1 example input
     make_static_grid_png(example_corners, filename=f"{MEDIA_DIR}/grid_example.png")
     max_area = 0
     for idx, (c1, c2) in enumerate(itertools.combinations(example_corners, 2)):
@@ -309,6 +311,7 @@ if __name__ == "__main__":
             max_area=max_area,
         )
 
+    # visualize part 1 full puzzle input
     red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
     draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/grid_puzzle_part1.png")
 
