@@ -8,6 +8,7 @@ import shapely
 import shapely.plotting
 from constants import MEDIA_DIR, PART1_EXAMPLE_FRAMES, PART1_PUZZLE_FRAMES
 from tqdm import tqdm
+from video import generate_video
 
 DEBUG = True
 GRID_W = 13
@@ -25,6 +26,8 @@ class COLORS(str, Enum):
     BLUE = "#1E88E5"
     PURPLE = "#8E24AA"
     LIGHT_PURPLE = "#CE93D8"
+    YELLOW = "#FFD600"
+    FOREST_GREEN = "#228B22"
 
 
 Coord = Tuple[int, int]
@@ -142,14 +145,11 @@ def initialize_poly_axes(rect):
 
 
 class Rectangle:
-    def __init__(self, rect=shapely.Polygon(), area=0):
+    def __init__(self, rect=shapely.Polygon(), area=0, c1=None, c2=None):
         self.polygon = rect
         self.area = area
-
-    def update(self, rect, area):
-        if area > self.area:
-            self.polygon = rect
-            self.area = area
+        self.c1 = c1
+        self.c2 = c2
 
 
 def draw_polygon_points(
@@ -160,17 +160,8 @@ def draw_polygon_points(
 ):
     fig, ax = initialize_poly_axes(rect)
     shapely.plotting.plot_points(tiles, ax=ax, color=COLORS.RED, markersize=1)
-
-    if max_rect and max_rect != rect:
-        shapely.plotting.plot_polygon(
-            max_rect.polygon,
-            ax=ax,
-            edgecolor=COLORS.PURPLE,
-            facecolor=COLORS.LIGHT_PURPLE,
-            linewidth=1.5,
-            add_points=False,
-        )
     if rect:
+        # draw shaded rectangle
         shapely.plotting.plot_polygon(
             rect.polygon,
             ax=ax,
@@ -178,6 +169,7 @@ def draw_polygon_points(
             facecolor=COLORS.LIGHT_BLUE,
             linewidth=1.5,
             add_points=False,
+            alpha=0.5,
         )
         # Draw text in the ax_text axes instead of using fig.text
         ax.text(
@@ -200,6 +192,50 @@ def draw_polygon_points(
             color=COLORS.PURPLE,
             transform=ax.transAxes,
         )
+        # draw colored points at rectangle corners
+        ax.plot(
+            rect.c1[0],
+            rect.c1[1],
+            marker="o",
+            color=COLORS.YELLOW,
+            markersize=3,
+        )
+        ax.plot(
+            rect.c2[0],
+            rect.c2[1],
+            marker="o",
+            color=COLORS.FOREST_GREEN,
+            markersize=3,
+        )
+
+    if max_rect:
+        # draw shaded max area rectangle
+        shapely.plotting.plot_polygon(
+            max_rect.polygon,
+            ax=ax,
+            edgecolor=COLORS.PURPLE,
+            facecolor=COLORS.LIGHT_PURPLE,
+            linewidth=1.5,
+            add_points=False,
+            alpha=0.2,
+        )
+        # draw colored points at rectangle corners
+        ax.plot(
+            max_rect.c1[0],
+            max_rect.c1[1],
+            marker="o",
+            color=COLORS.YELLOW,
+            markersize=3,
+            alpha=0.7,
+        )
+        ax.plot(
+            max_rect.c2[0],
+            max_rect.c2[1],
+            marker="o",
+            color=COLORS.FOREST_GREEN,
+            markersize=3,
+            alpha=0.7,
+        )
     save_png(filename, fig)
     return ax
 
@@ -209,7 +245,7 @@ def corners_to_rectangle(c1, c2) -> Rectangle:
     x2, y2 = c2
     rect = shapely.geometry.box(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
     area = rectangle_area(c1, c2)
-    return Rectangle(rect, area)
+    return Rectangle(rect, area, c1, c2)
 
 
 class Frame:
@@ -276,14 +312,43 @@ if __name__ == "__main__":
     red_green_tiles = shapely.geometry.Polygon(puzzle_corners + [puzzle_corners[0]])
     draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/grid_puzzle_part1.png")
 
+    # capture all frames from the first k iterations, then only the largest rectangle
+    # tested rectangle in all remaining frames, largest tested is largest within that
+    # that iteration and not necessarily the max total rectangle observed across all
+    # iterations, an iteration is defined as c1 being constant
+    NUM_FULL_FRAME_ITERATIONS = 2
     max_rect = Rectangle()
     frame_data = []
-    for idx, (c1, c2) in enumerate(itertools.combinations(puzzle_corners, 2)):
+    full_frame_iteration_count = 0
+    max_iteration_rect = Rectangle()
+    prev_c1 = None
+    for c1, c2 in itertools.combinations(puzzle_corners, 2):
+        # detect new c1 iteration, when it occurs capture the max rectangle from that
+        # iteration, but only if all full frame iterations have been completed
+        if prev_c1 != c1:
+            # check if max iteration frame should be captured otherwise discard as it
+            # was captured by full frame capture logic
+            if full_frame_iteration_count > NUM_FULL_FRAME_ITERATIONS:
+                frame_data.append(Frame(max_iteration_rect, max_rect))
+            # reset for next iteration
+            full_frame_iteration_count += 1
+            max_iteration_rect = Rectangle()
+            prev_c1 = c1
+
         rect = corners_to_rectangle(c1, c2)
+        # check if rectangle is maximum rectangle from all tests
         if rect.area > max_rect.area:
             max_rect = rect
-        frame_data.append(Frame(rect, max_rect))
+        # check if rectangle is maximum for this c1 iteration
+        if rect.area > max_iteration_rect.area:
+            max_iteration_rect = rect
+
+        if full_frame_iteration_count <= NUM_FULL_FRAME_ITERATIONS:
+            frame_data.append(Frame(rect, max_rect))
     multiprocessing_draw(red_green_tiles, frame_data)
+
+    generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
+    generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 50)
     exit()
 
     # # create a list of points with first point repeated at end to create a full loop

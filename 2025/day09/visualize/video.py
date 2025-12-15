@@ -25,7 +25,3 @@ def generate_video(frames_dir, out_filename, fps=10):
         out.write(img)
 
     out.release()
-
-
-generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
-generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 4000)
