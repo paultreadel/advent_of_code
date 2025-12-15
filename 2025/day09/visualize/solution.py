@@ -346,6 +346,10 @@ if __name__ == "__main__":
     red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
     draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/part1_grid_puzzle.png")
 
+    #######
+    # generate part 1 frames for each rectangle tested on full puzzle input
+    #######
+
     # capture all frames from the first k iterations, then only the largest rectangle
     # tested rectangle in all remaining frames, largest tested is largest within that
     # that iteration and not necessarily the max total rectangle observed across all
@@ -357,6 +361,8 @@ if __name__ == "__main__":
     max_iteration_rect = Rectangle()
     prev_c1 = None
     for c1, c2 in itertools.combinations(puzzle_corners, 2):
+        rect = corners_to_rectangle(c1, c2)
+
         # detect new c1 iteration, when it occurs capture the max rectangle from that
         # iteration, but only if all full frame iterations have been completed
         if prev_c1 != c1:
@@ -369,7 +375,6 @@ if __name__ == "__main__":
             max_iteration_rect = Rectangle()
             prev_c1 = c1
 
-        rect = corners_to_rectangle(c1, c2)
         # check if rectangle is maximum rectangle from all tests
         if rect.area > max_rect.area:
             max_rect = rect
