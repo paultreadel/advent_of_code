@@ -176,20 +176,9 @@ def draw_polygon_points(
     rect: Optional[Rectangle] = None,
     max_rect: Optional[Rectangle] = None,
     draw_edges=False,
+    uncontained_geometry=None,
 ):
     fig, ax = initialize_poly_axes(rect)
-    if draw_edges:
-        shapely.plotting.plot_polygon(
-            tiles,
-            ax=ax,
-            facecolor=COLORS.LIGHT_GRAY,
-            edgecolor=COLORS.GREEN,
-            add_points=False,
-        )
-        markersize = 0.5
-    else:
-        markersize = 1.0
-    shapely.plotting.plot_points(tiles, ax=ax, color=COLORS.RED, markersize=markersize)
     if rect:
         # draw shaded rectangle
         shapely.plotting.plot_polygon(
@@ -266,8 +255,25 @@ def draw_polygon_points(
             markersize=3,
             alpha=0.7,
         )
+
+    if uncontained_geometry:
+        shapely.plotting.plot_polygon(
+            uncontained_geometry, ax=ax, color=COLORS.RED, add_points=False, alpha=0.7
+        )
+    if draw_edges:
+        shapely.plotting.plot_polygon(
+            tiles,
+            ax=ax,
+            facecolor="#BDBDBD33",  # gray with 20% alpha
+            edgecolor=COLORS.GREEN,
+            add_points=False,
+        )
+        markersize = 0.5
+    else:
+        markersize = 1.0
+    shapely.plotting.plot_points(tiles, ax=ax, color=COLORS.RED, markersize=markersize)
     save_png(filename, fig)
-    return ax
+    return fig, ax
 
 
 def corners_to_rectangle(c1, c2) -> Rectangle:
@@ -279,9 +285,10 @@ def corners_to_rectangle(c1, c2) -> Rectangle:
 
 
 class Frame:
-    def __init__(self, rect, max_rect):
+    def __init__(self, rect, max_rect, uncontained_geometry):
         self.rect = rect
         self.max_rect = max_rect
+        self.uncontained_geometry = uncontained_geometry
 
     def draw_frame(self, tiles, idx, out_dir, draw_edges):
         draw_polygon_points(
@@ -290,6 +297,7 @@ class Frame:
             rect=self.rect,
             max_rect=self.max_rect,
             draw_edges=draw_edges,
+            uncontained_geometry=self.uncontained_geometry,
         )
 
 
@@ -337,11 +345,13 @@ def generate_frame_data(
     full_frame_iteration_count = 0
     max_iteration_rect = Rectangle()
     prev_c1 = None
-    for c1, c2 in itertools.combinations(corners, 2):
+    for c1, c2 in tqdm(list(itertools.combinations(corners, 2))):
         rect = corners_to_rectangle(c1, c2)
-        if part2:
-            if not main_polygon.contains(rect.polygon):
-                continue
+        uncontained_geom = (
+            shapely.difference(rect.polygon, main_polygon)
+            if part2
+            else shapely.Polygon()  # empty polygon
+        )
 
         # detect new c1 iteration, when it occurs capture the max rectangle from that
         # iteration, but only if all full frame iterations have been completed
@@ -349,21 +359,25 @@ def generate_frame_data(
             # check if max iteration frame should be captured otherwise discard as it
             # was captured by full frame capture logic
             if full_frame_iteration_count > num_full_frame_iterations:
-                frame_data.append(Frame(max_iteration_rect, max_rect))
+                frame_data.append(Frame(max_iteration_rect, max_rect, uncontained_geom))
             # reset for next iteration
             full_frame_iteration_count += 1
             max_iteration_rect = Rectangle()
             prev_c1 = c1
 
-        # check if rectangle is maximum rectangle from all tests
-        if rect.area > max_rect.area:
-            max_rect = rect
-        # check if rectangle is maximum for this c1 iteration
-        if rect.area > max_iteration_rect.area:
-            max_iteration_rect = rect
+        # execute max rectangle update checks when uncontained_geometry is empty (aka
+        # contained by polygon), for part1 the geometry is always empty so max
+        # rectangle update checks always performed
+        if uncontained_geom.is_empty:
+            # check if rectangle is maximum rectangle from all tests
+            if rect.area > max_rect.area:
+                max_rect = rect
+            # check if rectangle is maximum for this c1 iteration
+            if rect.area > max_iteration_rect.area:
+                max_iteration_rect = rect
 
         if full_frame_iteration_count <= num_full_frame_iterations:
-            frame_data.append(Frame(rect, max_rect))
+            frame_data.append(Frame(rect, max_rect, uncontained_geom))
     return frame_data
 
 
@@ -456,12 +470,7 @@ if __name__ == "__main__":
     )
 
     # generate part 2 frames & video- full puzzle input
-    frame_data_part2 = generate_frame_data(
-        puzzle_corners,
-        part2=True,
-        # draw all frames, most fail containment check so total frame count is low
-        num_full_frame_iterations=9999,
-    )
+    frame_data_part2 = generate_frame_data(puzzle_corners, part2=True)
     multiprocessing_draw(
         red_green_tiles, frame_data_part2, out_dir=PART2_PUZZLE_FRAMES, draw_edges=True
     )
