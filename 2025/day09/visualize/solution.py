@@ -11,6 +11,7 @@ from constants import (
     PART1_EXAMPLE_FRAMES,
     PART1_PUZZLE_FRAMES,
     PART2_EXAMPLE_FRAMES,
+    PART2_PUZZLE_FRAMES,
 )
 from tqdm import tqdm
 from video import generate_video
@@ -453,49 +454,15 @@ if __name__ == "__main__":
         filename=f"{MEDIA_DIR}/part2_grid_puzzle.png",
         draw_edges=True,
     )
-    exit()
 
-    # # create a list of points with first point repeated at end to create a full loop
-    # points_ring = example_corners.copy()
-    # points_ring.append(example_corners[0])
-    # red_green_tiles = shapely.geometry.Polygon(example_corners)
-    # max_area_part2 = 0
-    # max_rectangle = shapely.Polygon()
-    #
-    # for c1, c2 in itertools.combinations(example_corners, 2):
-    #     x1, y1 = c1
-    #     x2, y2 = c2
-    #     square_geom = shapely.geometry.box(
-    #         min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
-    #     )
-    #     area = rectangle_area(c1, c2)
-    #     if area < max_area_part2:
-    #         continue
-    #     if not red_green_tiles.contains(square_geom):
-    #         continue
-    #     area = rectangle_area(c1, c2)
-    #     if area > max_area_part2:
-    #         max_area_part2 = area
-    #         max_rectangle = square_geom
-    # total_part2 = max_area_part2
-    #
-    # import matplotlib.pyplot as plt
-    # from shapely.plotting import plot_polygon
-    #
-    # fig, ax = plt.subplots()
-    # plot_polygon(
-    #     red_green_tiles,
-    #     ax=ax,
-    #     add_points=False,
-    #     facecolor="lightblue",
-    #     edgecolor="blue",
-    # )
-    # plot_polygon(
-    #     max_rectangle,
-    #     ax=ax,
-    #     add_points=False,
-    #     facecolor="violet",
-    #     edgecolor="purple",
-    # )
-    # ax.set_aspect("equal", adjustable="datalim")
-    # plt.show()
+    # generate part 2 frames & video- full puzzle input
+    frame_data_part2 = generate_frame_data(
+        puzzle_corners,
+        part2=True,
+        # draw all frames, most fail containment check so total frame count is low
+        num_full_frame_iterations=9999,
+    )
+    multiprocessing_draw(
+        red_green_tiles, frame_data_part2, out_dir=PART2_PUZZLE_FRAMES, draw_edges=True
+    )
+    generate_video(PART2_PUZZLE_FRAMES, "part2_puzzle.mp4", 50)
