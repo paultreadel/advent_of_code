@@ -20,7 +20,7 @@ def generate_video(frames_dir, out_filename, fps=10):
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(f"{MEDIA_DIR}/{out_filename}", fourcc, fps, (width, height))
 
-    for img_path in tqdm(ordered_frames):
+    for img_path in tqdm(ordered_frames, desc="Generating video: "):
         img = cv2.imread(img_path)
         out.write(img)
 

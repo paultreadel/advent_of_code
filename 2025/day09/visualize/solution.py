@@ -317,6 +317,7 @@ def multiprocessing_draw(tiles, frame_data, out_dir, draw_edges=False):
                 ],
             ),
             total=len(frame_data),
+            desc="Drawing frames: ",
         ):
             pass
 
@@ -345,7 +346,9 @@ def generate_frame_data(
     full_frame_iteration_count = 0
     max_iteration_rect = Rectangle()
     prev_c1 = None
-    for c1, c2 in tqdm(list(itertools.combinations(corners, 2))):
+    for c1, c2 in tqdm(
+        list(itertools.combinations(corners, 2)), desc="Generating frames: "
+    ):
         rect = corners_to_rectangle(c1, c2)
         uncontained_geom = (
             shapely.difference(rect.polygon, main_polygon)
@@ -398,6 +401,8 @@ if __name__ == "__main__":
         values = line.split(",")
         puzzle_corners.append((int(values[0]), int(values[1])))
 
+    print("Part 1")
+
     # visualize part 1 example input
     make_static_grid_png(
         example_corners, filename=f"{MEDIA_DIR}/part1_grid_example.png"
@@ -427,9 +432,7 @@ if __name__ == "__main__":
     generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
     generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 50)
 
-    ##########
-    # PART 2 #
-    ##########
+    print("Part 2")
 
     # get set of all green tiles on perimeter of polygon defined by loop of polygon
     # corners
