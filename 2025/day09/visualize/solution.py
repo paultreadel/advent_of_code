@@ -6,7 +6,12 @@ from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 import shapely
 import shapely.plotting
-from constants import MEDIA_DIR, PART1_EXAMPLE_FRAMES, PART1_PUZZLE_FRAMES
+from constants import (
+    MEDIA_DIR,
+    PART1_EXAMPLE_FRAMES,
+    PART1_PUZZLE_FRAMES,
+    PART2_EXAMPLE_FRAMES,
+)
 from tqdm import tqdm
 from video import generate_video
 
@@ -103,13 +108,24 @@ def make_static_grid_png(
     rectangle: Optional[Rect] = None,
     current_area: Optional[str] = None,
     max_area: Optional[str] = None,
+    green_tiles: List[Coord] = None,
 ):
     fig, ax = plt.subplots(figsize=(6, 6))
     draw_grid(ax)
     plot_tiles(ax, coords)
+    # plot green tiles if available
+    if green_tiles:
+        plot_tiles(ax, green_tiles, color=COLORS.GREEN)
     if rectangle:
-        tiles = rectangle_to_tiles((c1, c2))
-        plot_tiles(ax, tiles, color=COLORS.LIGHT_BLUE)
+        c1, c2 = rectangle
+        tiles = rectangle_to_tiles(rectangle)
+        if green_tiles:
+            # plot blue with alpha to allow green tiles to be seen
+            plot_tiles(ax, tiles, color=COLORS.BLUE, alpha=0.5)
+        else:
+            # plot light blue with full alpha to overwrite any tiles covered by the
+            # rectangle
+            plot_tiles(ax, tiles, color=COLORS.LIGHT_BLUE, alpha=1.0)
         # highlight corner tiles by drawing darker blue
         plot_tiles(ax, [c1, c2], color=COLORS.BLUE)
         # Add area text annotation below plot area
@@ -354,6 +370,41 @@ if __name__ == "__main__":
     #
     # generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
     # generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 50)
+
+    #######
+    # visualize part 2 example input
+    #######
+
+    # get set of all green tiles on perimeter of polygon defined by loop of polygon
+    # corners
+    example_polygon = shapely.geometry.Polygon(example_corners)
+    example_green_tiles = set()
+    for i in range(int(example_polygon.length)):
+        point_at_dist_i = example_polygon.exterior.interpolate(i)
+        example_green_tiles.add(
+            (int(round(point_at_dist_i.x)), int(round(point_at_dist_i.y)))
+        )
+    example_green_tiles = list(example_green_tiles.difference(example_corners))
+
+    # draw example input with green tiles between each red corner on the loop
+    make_static_grid_png(
+        example_corners,
+        filename=f"{MEDIA_DIR}/part2_grid_example.png",
+        green_tiles=example_green_tiles,
+    )
+
+    max_area = 0
+    for idx, (c1, c2) in enumerate(itertools.combinations(example_corners, 2)):
+        # draw all rectangles, even if they are not contained
+        area = rectangle_area(c1, c2)
+        make_static_grid_png(
+            example_corners,
+            filename=f"{PART2_EXAMPLE_FRAMES}/{idx:03d}.png",
+            rectangle=(c1, c2),
+            current_area=area,
+            max_area=area,
+            green_tiles=example_green_tiles,
+        )
     exit()
 
     # # create a list of points with first point repeated at end to create a full loop
