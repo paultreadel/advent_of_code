@@ -282,26 +282,30 @@ class Frame:
         self.rect = rect
         self.max_rect = max_rect
 
-    def draw_frame(self, tiles, idx):
+    def draw_frame(self, tiles, idx, out_dir, draw_edges):
         draw_polygon_points(
             tiles,
-            filename=f"{PART1_PUZZLE_FRAMES}/{idx:06d}.png",
+            filename=f"{out_dir}/{idx:06d}.png",
             rect=self.rect,
             max_rect=self.max_rect,
+            draw_edges=draw_edges,
         )
 
 
 def draw_frame_wrapper(args):
-    idx, frame, tiles = args
-    frame.draw_frame(tiles, idx)
+    idx, frame, tiles, out_dir, draw_edges = args
+    frame.draw_frame(tiles=tiles, idx=idx, out_dir=out_dir, draw_edges=draw_edges)
 
 
-def multiprocessing_draw(tiles, frame_data):
+def multiprocessing_draw(tiles, frame_data, out_dir, draw_edges=False):
     with multiprocessing.Pool() as pool:
         for _ in tqdm(
             pool.imap_unordered(
                 draw_frame_wrapper,
-                [(idx, frame, tiles) for idx, frame in enumerate(frame_data)],
+                [
+                    (idx, frame, tiles, out_dir, draw_edges)
+                    for idx, frame in enumerate(frame_data)
+                ],
             ),
             total=len(frame_data),
         ):
@@ -402,7 +406,7 @@ if __name__ == "__main__":
 
     # generate part 1 frames for each rectangle tested on full puzzle input
     frame_data = generate_frame_data(puzzle_corners, part2=False)
-    multiprocessing_draw(red_green_tiles, frame_data)
+    multiprocessing_draw(red_green_tiles, frame_data, out_dir=PART1_PUZZLE_FRAMES)
 
     # merge part 1 frame images into a videos
     generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
