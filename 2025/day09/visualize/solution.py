@@ -308,6 +308,60 @@ def multiprocessing_draw(tiles, frame_data):
             pass
 
 
+def generate_frame_data(
+    corners: List[Coord],
+    num_full_frame_iterations=2,
+    part2: bool = False,
+):
+    """
+    Generate frames for the given puzzle input corner coordinates.
+
+    A parameter to specify the number of c1 corner iterations at full frame can be
+    used to reduce total frame count. An iteration consists of all rectangles
+    sharing the same c1 corner coordinate. After the full frame iteration limit is
+    reached only the frame with the largest rectangle for each c1 corner is captured.
+
+    When part 2 flag is active the containment check is performed. Frames where the
+    rectangle is not contained are discarded.
+    """
+
+    main_polygon = shapely.geometry.Polygon(puzzle_corners)
+
+    max_rect = Rectangle()
+    frame_data = []
+    full_frame_iteration_count = 0
+    max_iteration_rect = Rectangle()
+    prev_c1 = None
+    for c1, c2 in itertools.combinations(corners, 2):
+        rect = corners_to_rectangle(c1, c2)
+        if part2:
+            if not main_polygon.contains(rect.polygon):
+                continue
+
+        # detect new c1 iteration, when it occurs capture the max rectangle from that
+        # iteration, but only if all full frame iterations have been completed
+        if prev_c1 != c1:
+            # check if max iteration frame should be captured otherwise discard as it
+            # was captured by full frame capture logic
+            if full_frame_iteration_count > num_full_frame_iterations:
+                frame_data.append(Frame(max_iteration_rect, max_rect))
+            # reset for next iteration
+            full_frame_iteration_count += 1
+            max_iteration_rect = Rectangle()
+            prev_c1 = c1
+
+        # check if rectangle is maximum rectangle from all tests
+        if rect.area > max_rect.area:
+            max_rect = rect
+        # check if rectangle is maximum for this c1 iteration
+        if rect.area > max_iteration_rect.area:
+            max_iteration_rect = rect
+
+        if full_frame_iteration_count <= num_full_frame_iterations:
+            frame_data.append(Frame(rect, max_rect))
+    return frame_data
+
+
 if __name__ == "__main__":
     with open("sample.txt", "r") as f:
         lines = f.read()
@@ -346,52 +400,17 @@ if __name__ == "__main__":
     red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
     draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/part1_grid_puzzle.png")
 
-    #######
     # generate part 1 frames for each rectangle tested on full puzzle input
-    #######
-
-    # capture all frames from the first k iterations, then only the largest rectangle
-    # tested rectangle in all remaining frames, largest tested is largest within that
-    # that iteration and not necessarily the max total rectangle observed across all
-    # iterations, an iteration is defined as c1 being constant
-    NUM_FULL_FRAME_ITERATIONS = 2
-    max_rect = Rectangle()
-    frame_data = []
-    full_frame_iteration_count = 0
-    max_iteration_rect = Rectangle()
-    prev_c1 = None
-    for c1, c2 in itertools.combinations(puzzle_corners, 2):
-        rect = corners_to_rectangle(c1, c2)
-
-        # detect new c1 iteration, when it occurs capture the max rectangle from that
-        # iteration, but only if all full frame iterations have been completed
-        if prev_c1 != c1:
-            # check if max iteration frame should be captured otherwise discard as it
-            # was captured by full frame capture logic
-            if full_frame_iteration_count > NUM_FULL_FRAME_ITERATIONS:
-                frame_data.append(Frame(max_iteration_rect, max_rect))
-            # reset for next iteration
-            full_frame_iteration_count += 1
-            max_iteration_rect = Rectangle()
-            prev_c1 = c1
-
-        # check if rectangle is maximum rectangle from all tests
-        if rect.area > max_rect.area:
-            max_rect = rect
-        # check if rectangle is maximum for this c1 iteration
-        if rect.area > max_iteration_rect.area:
-            max_iteration_rect = rect
-
-        if full_frame_iteration_count <= NUM_FULL_FRAME_ITERATIONS:
-            frame_data.append(Frame(rect, max_rect))
+    frame_data = generate_frame_data(puzzle_corners, part2=False)
     multiprocessing_draw(red_green_tiles, frame_data)
 
+    # merge part 1 frame images into a videos
     generate_video(PART1_EXAMPLE_FRAMES, "part1_example.mp4", 2)
     generate_video(PART1_PUZZLE_FRAMES, "part1_puzzle.mp4", 50)
 
-    #######
-    # visualize part 2 example input
-    #######
+    ##########
+    # PART 2 #
+    ##########
 
     # get set of all green tiles on perimeter of polygon defined by loop of polygon
     # corners
