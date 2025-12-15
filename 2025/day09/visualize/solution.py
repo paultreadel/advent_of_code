@@ -309,7 +309,7 @@ if __name__ == "__main__":
             max_area=max_area,
         )
 
-    red_green_tiles = shapely.geometry.Polygon(puzzle_corners + [puzzle_corners[0]])
+    red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
     draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/grid_puzzle_part1.png")
 
     # capture all frames from the first k iterations, then only the largest rectangle
