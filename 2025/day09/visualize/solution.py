@@ -33,6 +33,7 @@ class COLORS(str, Enum):
     LIGHT_PURPLE = "#CE93D8"
     YELLOW = "#FFD600"
     FOREST_GREEN = "#228B22"
+    LIGHT_GRAY = "#F0F0F0"
 
 
 Coord = Tuple[int, int]
@@ -169,13 +170,25 @@ class Rectangle:
 
 
 def draw_polygon_points(
-    tiles: shapely.Geometry,
+    tiles: shapely.Polygon,
     filename: str,
     rect: Optional[Rectangle] = None,
     max_rect: Optional[Rectangle] = None,
+    draw_edges=False,
 ):
     fig, ax = initialize_poly_axes(rect)
-    shapely.plotting.plot_points(tiles, ax=ax, color=COLORS.RED, markersize=1)
+    if draw_edges:
+        shapely.plotting.plot_polygon(
+            tiles,
+            ax=ax,
+            facecolor=COLORS.LIGHT_GRAY,
+            edgecolor=COLORS.GREEN,
+            add_points=False,
+        )
+        markersize = 0.5
+    else:
+        markersize = 1.0
+    shapely.plotting.plot_points(tiles, ax=ax, color=COLORS.RED, markersize=markersize)
     if rect:
         # draw shaded rectangle
         shapely.plotting.plot_polygon(
@@ -330,7 +343,7 @@ if __name__ == "__main__":
     #     )
     #
     # # visualize part 1 full puzzle input
-    # red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
+    red_green_tiles = shapely.geometry.Polygon(puzzle_corners)
     # draw_polygon_points(red_green_tiles, filename=f"{MEDIA_DIR}/part1_grid_puzzle.png")
     #
     # # capture all frames from the first k iterations, then only the largest rectangle
@@ -405,6 +418,13 @@ if __name__ == "__main__":
             max_area=area,
             green_tiles=example_green_tiles,
         )
+
+    # visualize part 2 full puzzle input
+    draw_polygon_points(
+        red_green_tiles,
+        filename=f"{MEDIA_DIR}/part2_grid_puzzle.png",
+        draw_edges=True,
+    )
     exit()
 
     # # create a list of points with first point repeated at end to create a full loop
